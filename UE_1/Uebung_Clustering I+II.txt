@@ -1,0 +1,185 @@
+#R version 3.4.0
+library(stats)
+library(cluster)
+library(class)
+#ALL data
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("ALL")
+library(ALL)
+#
+#Aufgabe Milch
+#
+rm(list = ls())
+#
+milk<-read.table('Milch.csv',header=TRUE,sep=';',quote='',dec=',',row.names=1,check.names=TRUE)
+milk.daisy_m<-daisy(milk,metric='manhattan')
+milk.daisy_m.hclust_w<-hclust(milk.daisy_m,method='ward.D')
+plot(milk.daisy_m.hclust_w)
+#
+#ohne Standardisierung
+milk.agnes_e_w<-agnes(milk,metric='euclidean',method='ward',stand=TRUE)
+milk.agnes_m_w<-agnes(milk,metric='manhattan',method='ward',stand=TRUE)
+dev.new()
+layout(matrix(c(1,2),2,1))
+plot(milk.agnes_m_w,which=2)
+plot(milk.agnes_e_w,which=2)
+dev.new()
+layout(matrix(c(1,2),2,1))
+plot(milk.agnes_m_w,which=1)
+plot(milk.agnes_e_w,which=1)
+#
+milk.agnes_m_w.sil4<-silhouette(cutree(milk.agnes_m_w,4),milk.agnes_m_w$diss)
+milk.agnes_e_w.sil4<-silhouette(cutree(milk.agnes_e_w,4),milk.agnes_e_w$diss)
+dev.new()
+layout(matrix(c(1,2),2,1))
+plot(milk.agnes_m_w.sil4)
+plot(milk.agnes_e_w.sil4)
+#
+#mit Standardisierung
+milk.diana_m<-diana(milk,metric='manhattan',stand=TRUE)
+milk.diana_e<-diana(milk,metric='euclidean',stand=TRUE)
+dev.new()
+layout(matrix(c(1,2),2,1))
+plot(milk.diana_m,which=2)
+plot(milk.diana_e,which=2)
+#
+milk.diana_m.sil5<-silhouette(cutree(milk.diana_m,5),milk.diana_m$diss)
+milk.diana_e.sil5<-silhouette(cutree(milk.diana_e,5),milk.diana_e$diss)
+dev.new()
+layout(matrix(c(1,2),2,1))
+plot(milk.diana_m.sil5)
+plot(milk.diana_e.sil5)
+#
+#
+qmilk<-read.table('qMilch.csv',header=TRUE,sep=';',quote='',dec=',',row.names=1,check.names=TRUE)
+amilk<-rbind(milk,qmilk)
+amilk.agnes_m_w<-agnes(amilk,metric='euclidean',method='ward',stand=TRUE)
+#
+dev.new()
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+plot(milk.agnes_m_w,which=2)
+plot(amilk.agnes_m_w,which=2)
+clusplot(milk,cutree(milk.agnes_m_w,4),color=TRUE, shade=TRUE,labels=2,lines=0)
+clusplot(amilk,cutree(amilk.agnes_m_w,4),color=TRUE, shade=TRUE,labels=2,lines=0)
+#
+#
+#Aufgabe Gebiss
+#
+#
+rm(list = ls())
+dent<-read.table('Gebiss.csv',header=TRUE,sep=';',quote='',dec=',',row.names=1,check.names=TRUE)
+#
+dent.diana_m<-diana(dent,metric="manhattan")
+dent.diana_mstd<-diana(dent,metric="manhattan",stand=TRUE)
+dent.diana_e<-diana(dent,metric="euclidean")
+dent.diana_estd<-diana(dent,metric="euclidean",stand=TRUE)
+dev.new()
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+plot(dent.diana_m,which=2)
+plot(dent.diana_mstd,which=2)
+plot(dent.diana_e,which=2)
+plot(dent.diana_estd,which=2)
+#
+dent.agnes_e_s<-agnes(dent,metric="euclidean",method='single',stand=TRUE)
+dent.agnes_e_c<-agnes(dent,metric="euclidean",method='complete',stand=TRUE)
+dent.agnes_e_a<-agnes(dent,metric="euclidean",method='average',stand=TRUE)
+dent.agnes_e_w<-agnes(dent,metric="euclidean",method='ward',stand=TRUE)
+dev.new()
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+plot(dent.agnes_e_s,which=2)
+plot(dent.agnes_e_c,which=2)
+plot(dent.agnes_e_w,which=2)
+plot(dent.agnes_e_a,which=2)
+#
+dev.off()
+#
+optcluster<-function (x) {
+  minclust<-2;
+  maxclust<-nrow(x$data)-1
+  asw<-c(0.0)
+  for (i in minclust:maxclust) {
+    asw[i]<-summary(silhouette(cutree(x,i),x$diss))$avg.width
+  }
+  return(asw)
+}
+dent.agnes_e_a.asw<-optcluster(dent.agnes_e_a)
+plot(dent.agnes_e_a.asw)
+which.max(dent.agnes_e_a.asw)
+#
+#
+#Aufgabe Lebenserwartung
+#
+#
+rm(list = ls())
+le<-read.table('Lebenserwartung.csv',header=TRUE,sep=';',quote='',dec=',',row.names=1,check.names=TRUE)
+#
+le.diana<-diana(le,metric="euclidean")
+lem<-le[,1:4]
+lew<-le[,5:8]
+lem.diana<-diana(lem,metric="euclidean")
+lew.diana<-diana(lew,metric="euclidean")
+dev.new()
+plot(le.diana,which=2)
+dev.new()
+plot(lem.diana,which=2)
+dev.new()
+plot(lew.diana,which=2)
+#
+le25<-le[,c(2,6)]
+le25m<-as.matrix(le25[,1])
+rownames(le25m)<-rownames(le25)
+le25w<-as.matrix(le25[,2])
+rownames(le25w)<-rownames(le25)
+le25.diana<-diana(le25,metric="euclidean")
+le25m.diana<-diana(le25m,metric="euclidean")
+le25w.diana<-diana(le25w,metric="euclidean")
+dev.new()
+plot(le25.diana,which=2)
+dev.new()
+plot(le25m.diana,which=2)
+dev.new()
+plot(le25w.diana,which=2)
+#
+le0<-le[,c(1,5)]
+le50<-le[,c(3,7)]
+le75<-le[,c(4,8)]
+le0.diana<-diana(le0,metric="euclidean")
+le25.diana<-diana(le25,metric="euclidean")
+le50.diana<-diana(le50,metric="euclidean")
+le75.diana<-diana(le75,metric="euclidean")
+dev.new()
+plot(le0.diana,which=2)
+dev.new()
+plot(le25.diana,which=2)
+dev.new()
+plot(le50.diana,which=2)
+dev.new()
+plot(le75.diana,which=2)
+#
+#
+#Aufgabe CLL
+#
+#
+rm(list = ls())
+data(ALL)
+x     = t(exprs(ALL))              				#speichere Genexpressionsdaten in Variable x
+rownames(x)=substr(ALL$BT,1,1) 				#Annotiere mit "B" und "T"
+bind  = which(rownames(x)=="B")                       #Spalten der B-Zell-Patient(inn)en
+tind  = which(rownames(x)=="T")                       #Spalten der T-Zell-Patient(inn)en
+#k-nearest neighbor
+train = x[c(bind[1:60],tind[1:20]),]                  #60 B-Zell, 20 T-Zell-Patient(inn)en
+test  = x[c(bind[61:95],tind[21:33]),]                #35 B-Zell, 13 T-Zell-Patient(inn)en
+lymph.knn = knn(train,test,rownames(train))           #k nearest neighbor mit k=1
+table(lymph.knn,rownames(test))
+#k-means
+N =  50                                               # number of genes [1, 12625]
+dat <-x[,order(apply(x,2,var),decreasing=T)[1:N]]     # reduziere den Datensatz, 100 varianzstärkste Gene
+all.kmeans  <- kmeans(dat,2, nstart=10);              # k-Means, 2 Cluster, 10 Wiederholungen
+table(names(all.kmeans$cluster),all.kmeans$cluster)
+rownames(dat) = ALL$BT
+all.kmeans  <- kmeans(dat,10, nstart=10);             # k-Means, 10 Cluster, 10 Wiederholungen
+table(names(all.kmeans$cluster),all.kmeans$cluster)
+###
+###
+###
